@@ -1,0 +1,16 @@
+<odoo>
+    <!-- Menú principal en Facturación -->
+    <menuitem 
+        id="menu_cashbox_reports"
+        name="Reportes de Caja"
+        parent="account.menu_finance_reports"
+        sequence="40"/>
+
+    <!-- Submenú para reporte de sesiones -->
+    <menuitem 
+        id="menu_cashbox_session_report"
+        name="Reporte de Sesiones"
+        parent="menu_cashbox_reports"
+        action="action_cashbox_session_report_wizard"
+        sequence="10"/>
+</odoo>

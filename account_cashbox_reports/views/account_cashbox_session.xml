@@ -1,0 +1,14 @@
+<odoo>
+    <record id="view_account_cashbox_session_form_inherit" model="ir.ui.view">
+        <field name="name">account.cashbox.session.form.inherit</field>
+        <field name="model">account.cashbox.session</field>
+        <field name="inherit_id" ref="account_cashbox.view_account_cashbox_session_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="%(action_cashbox_session_report)d" type="action" class="oe_stat_button" icon="fa-file-pdf-o">
+                    <span>Reporte Detallado</span>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

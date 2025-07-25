@@ -1,0 +1,31 @@
+<odoo>
+    <record id="view_cashbox_session_report_wizard_form" model="ir.ui.view">
+        <field name="name">cashbox.session.report.wizard.form</field>
+        <field name="model">cashbox.session.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reporte de Sesiones de Caja">
+                <group>
+                    <group string="Filtros de Fecha">
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                    <group string="Selección">
+                        <field name="session_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                        <field name="journal_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_generate_report" string="Generar PDF" type="object" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_cashbox_session_report_wizard" model="ir.actions.act_window">
+        <field name="name">Reporte de Sesiones de Caja</field>
+        <field name="res_model">cashbox.session.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="view_cashbox_session_report_wizard_form"/>
+    </record>
+</odoo> 

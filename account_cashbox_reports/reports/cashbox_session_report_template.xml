@@ -1,0 +1,513 @@
+<odoo>
+    <template id="cashbox_session_report_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="session">
+                <t t-call="web.external_layout">
+                    <div class="page" style="margin: 10px; font-size: 14px;">
+                        <!-- CSS específico para impresión -->
+                        <style>
+                            @media print {
+                                .page-break { page-break-before: always; }
+                                .avoid-break { page-break-inside: avoid; }
+                                .table-sm th, .table-sm td { padding: 4px 8px; font-size: 16px; }
+                                h1 { font-size: 20px; margin-bottom: 12px; }
+                                h3 { font-size: 16px; margin-bottom: 10px; }
+                                h4 { font-size: 14px; margin-bottom: 8px; }
+                                h5 { font-size: 12px; margin-bottom: 6px; }
+                                .badge { font-size: 11px; padding: 3px 6px; }
+                                .container { max-width: 100%; }
+                            }
+                            .compact-section { margin-bottom: 15px; }
+                            .mini-table th, .mini-table td { padding: 4px; font-size: 12px; }
+                            /* Estilos específicos para tablas de detalle de movimientos */
+                            .detail-table th, .detail-table td { padding: 6px 8px; font-size: 16px; line-height: 1.4; }
+                            .detail-table th { font-weight: bold; background-color: #f8f9fa; }
+                            .total-row td { font-weight: bold; font-size: 17px; }
+                        </style>
+
+                        <!-- Header Section -->
+                        <div class="compact-section avoid-break">
+                            <h1 class="text-center" style="border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 15px;">
+                                REPORTE DE SESIÓN DE CAJA
+                            </h1>
+                        </div>
+
+                        <!-- Session Information - Compacto -->
+                        <div class="compact-section avoid-break">
+                            <div style="border: 1px solid #ddd; padding: 10px;">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <h4><strong>Información de la Sesión</strong></h4>
+                                        <table class="table table-borderless mini-table">
+                                            <tr>
+                                                <td style="width: 30%;"><strong>Sesión:</strong></td>
+                                                <td><span t-field="session.name"/></td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Caja:</strong></td>
+                                                <td><span t-field="session.cashbox_id.name"/></td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Estado:</strong></td>
+                                                <td><span t-field="session.state" class="badge badge-secondary"/></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="col-6">
+                                        <h4><strong>Fechas y Usuarios</strong></h4>
+                                        <table class="table table-borderless mini-table">
+                                            <tr>
+                                                <td style="width: 30%;"><strong>Apertura:</strong></td>
+                                                <td><span t-field="session.opening_date" t-options="{'widget': 'datetime', 'format': 'short'}"/></td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Cierre:</strong></td>
+                                                <td><span t-field="session.closing_date" t-options="{'widget': 'datetime', 'format': 'short'}"/></td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Usuario(s):</strong></td>
+                                                <td><span t-esc="', '.join(session.user_ids.mapped('name'))"/></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Journal Summary - Compacto -->
+                        <div class="compact-section avoid-break">
+                            <h4 style="margin-bottom: 8px; border-bottom: 1px solid #000;"><strong>Control de Caja por Diario</strong></h4>
+                            <table class="table table-bordered table-sm detail-table" style="margin-bottom: 10px;">
+                                <thead style="background-color: #f0f0f0;">
+                                    <tr>
+                                        <th>Diario</th>
+                                        <th class="text-right">Saldo Inicial</th>
+                                        <th class="text-right">Movimientos</th>
+                                        <th class="text-right">Saldo Calculado</th>
+                                        <th class="text-right">Saldo Real</th>
+                                        <th class="text-right">Diferencia</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="session.line_ids" t-as="line">
+                                        <tr>
+                                            <td><strong><span t-field="line.journal_id.name"/></strong></td>
+                                            <td class="text-right">
+                                                <span t-field="line.balance_start" t-options="{'widget': 'monetary', 'display_currency': line.currency_id}"/>
+                                            </td>
+                                            <td class="text-right">
+                                                <span t-field="line.amount" t-options="{'widget': 'monetary', 'display_currency': line.currency_id}"/>
+                                            </td>
+                                            <td class="text-right">
+                                                <span t-field="line.balance_end" t-options="{'widget': 'monetary', 'display_currency': line.currency_id}"/>
+                                            </td>
+                                            <td class="text-right">
+                                                <span t-field="line.balance_end_real" t-options="{'widget': 'monetary', 'display_currency': line.currency_id}"/>
+                                            </td>
+                                            <td class="text-right">
+                                                <span t-field="line.balance_difference" 
+                                                      t-options="{'widget': 'monetary', 'display_currency': line.currency_id}"
+                                                      t-attf-style="#{line.balance_difference != 0 and 'font-weight: bold; color: #dc3545;' or 'color: #28a745;'}"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot style="background-color: #f8f9fa;">
+                                    <tr class="total-row">
+                                        <td><strong>TOTALES</strong></td>
+                                        <td class="text-right"><strong>
+                                            <span t-esc="sum(session.line_ids.mapped('balance_start'))" t-options="{'widget': 'monetary', 'display_currency': session.company_id.currency_id}"/>
+                                        </strong></td>
+                                        <td class="text-right"><strong>
+                                            <span t-esc="sum(session.line_ids.mapped('amount'))" t-options="{'widget': 'monetary', 'display_currency': session.company_id.currency_id}"/>
+                                        </strong></td>
+                                        <td class="text-right"><strong>
+                                            <span t-esc="sum(session.line_ids.mapped('balance_end'))" t-options="{'widget': 'monetary', 'display_currency': session.company_id.currency_id}"/>
+                                        </strong></td>
+                                        <td class="text-right"><strong>
+                                            <span t-esc="sum(session.line_ids.mapped('balance_end_real'))" t-options="{'widget': 'monetary', 'display_currency': session.company_id.currency_id}"/>
+                                        </strong></td>
+                                        <td class="text-right"><strong>
+                                            <span t-esc="sum(session.line_ids.mapped('balance_difference'))" 
+                                                  t-options="{'widget': 'monetary', 'display_currency': session.company_id.currency_id}"
+                                                  t-attf-style="#{sum(session.line_ids.mapped('balance_difference')) != 0 and 'color: #dc3545;' or 'color: #28a745;'}"/>
+                                        </strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <!-- Detailed Payments by Journal - Optimizado para impresión -->
+                        <t t-foreach="session.line_ids" t-as="line">
+                            <t t-set="journal_payments" t-value="session.payment_ids.filtered(lambda p: p.journal_id == line.journal_id)"/>
+                            <t t-if="journal_payments">
+                                <div class="compact-section avoid-break">
+                                    <h5 style="background-color: #f0f0f0; padding: 5px; margin-bottom: 5px; border-left: 3px solid #007bff;">
+                                        <strong>Movimientos en <span t-field="line.journal_id.name"/> 
+                                        (<span t-esc="len(journal_payments)"/> movimientos)</strong>
+                                    </h5>
+                                    
+                                    <!-- Separate Inbound and Outbound payments -->
+                                    <t t-set="inbound_payments" t-value="journal_payments.filtered(lambda p: p.payment_type == 'inbound')"/>
+                                    <t t-set="outbound_payments" t-value="journal_payments.filtered(lambda p: p.payment_type == 'outbound')"/>
+                                    
+                                    <!-- Cobros (Inbound) - Tabla compacta -->
+                                    <t t-if="inbound_payments">
+                                        <div class="avoid-break" style="margin-bottom: 8px;">
+                                            <h6 style="color: #28a745; margin-bottom: 3px;">
+                                                <strong>↓ Cobros (<span t-esc="len(inbound_payments)"/>)</strong>
+                                            </h6>
+                                            <table class="table table-sm table-bordered detail-table" style="margin-bottom: 5px;">
+                                                <thead style="background-color: #d4edda;">
+                                                    <tr>
+                                                        <th>Fecha</th>
+                                                        <th>Comprobante</th>
+                                                        <th>Cliente</th>
+                                                        <th>Método</th>
+                                                        <th class="text-right">Importe</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <t t-foreach="inbound_payments" t-as="payment">
+                                                        <tr>
+                                                            <td><span t-field="payment.date"/></td>
+                                                            <td><span t-field="payment.name"/></td>
+                                                            <td><span t-field="payment.partner_id.name"/></td>
+                                                            <td><span t-field="payment.payment_method_line_id.name"/></td>
+                                                            <td class="text-right" style="color: #28a745; font-weight: bold;">
+                                                                +<span t-field="payment.amount" t-options="{'widget': 'monetary', 'display_currency': payment.currency_id}"/>
+                                                            </td>
+                                                        </tr>
+                                                    </t>
+                                                </tbody>
+                                                <tfoot style="background-color: #f8f9fa;">
+                                                    <tr class="total-row">
+                                                        <td colspan="4" class="text-right"><strong>Total Cobros:</strong></td>
+                                                        <td class="text-right" style="padding: 2px; font-weight: bold; color: #28a745;">
+                                                            +<span t-esc="sum(inbound_payments.mapped('amount'))" 
+                                                                  t-options="{'widget': 'monetary', 'display_currency': line.currency_id}"/>
+                                                        </td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </t>
+
+                                    <!-- Pagos (Outbound) - Tabla compacta -->
+                                    <t t-if="outbound_payments">
+                                        <div class="avoid-break" style="margin-bottom: 8px;">
+                                            <h6 style="color: #dc3545; margin-bottom: 3px;">
+                                                <strong>↑ Pagos (<span t-esc="len(outbound_payments)"/>)</strong>
+                                            </h6>
+                                            <table class="table table-sm table-bordered detail-table" style="margin-bottom: 5px;">
+                                                <thead style="background-color: #f8d7da;">
+                                                    <tr>
+                                                        <th>Fecha</th>
+                                                        <th>Comprobante</th>
+                                                        <th>Proveedor</th>
+                                                        <th>Método</th>
+                                                        <th class="text-right">Importe</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <t t-foreach="outbound_payments" t-as="payment">
+                                                        <tr>
+                                                            <td style="padding: 2px;"><span t-field="payment.date"/></td>
+                                                            <td style="padding: 2px;"><span t-field="payment.name"/></td>
+                                                            <td style="padding: 2px;"><span t-field="payment.partner_id.name"/></td>
+                                                            <td style="padding: 2px;"><span t-field="payment.payment_method_line_id.name"/></td>
+                                                            <td class="text-right" style="padding: 2px; color: #dc3545; font-weight: bold;">
+                                                                -<span t-field="payment.amount" t-options="{'widget': 'monetary', 'display_currency': payment.currency_id}"/>
+                                                            </td>
+                                                        </tr>
+                                                    </t>
+                                                </tbody>
+                                                <tfoot style="background-color: #f8f9fa;">
+                                                    <tr>
+                                                        <td colspan="4" class="text-right total-row"><strong>Total Pagos:</strong></td>
+                                                        <td class="text-right" style="padding: 2px; font-weight: bold; color: #dc3545;">
+                                                            -<span t-esc="sum(outbound_payments.mapped('amount'))" 
+                                                                  t-options="{'widget': 'monetary', 'display_currency': line.currency_id}"/>
+                                                        </td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </t>
+
+                                    <!-- Neto del Diario -->
+                                    <div style="border: 1px solid #ddd; padding: 3px; text-align: right; background-color: #f8f9fa; margin-bottom: 5px;">
+                                        <small><strong>Neto del Diario: </strong></small>
+                                        <strong t-esc="sum(inbound_payments.mapped('amount')) - sum(outbound_payments.mapped('amount'))" 
+                                              t-options="{'widget': 'monetary', 'display_currency': line.currency_id}"/>
+                                    </div>
+                                </div>
+                            </t>
+                        </t>
+
+                        <!-- Session Summary - Compacto -->
+                        <div class="compact-section avoid-break" style="border: 1px solid #000; padding: 10px; background-color: #f8f9fa;">
+                            <h4 class="text-center" style="margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px;">
+                                <strong>Resumen General de la Sesión</strong>
+                            </h4>
+                            <div class="row text-center">
+                                <div class="col-3">
+                                    <h6 style="margin-bottom: 3px;"><strong>Total Cobros</strong></h6>
+                                    <h5 style="color: #28a745; margin-bottom: 2px;">
+                                        <span t-esc="sum(session.payment_ids.filtered(lambda p: p.payment_type == 'inbound').mapped('amount'))" 
+                                              t-options="{'widget': 'monetary', 'display_currency': session.company_id.currency_id}"/>
+                                    </h5>
+                                    <small style="font-size: 8px;"><span t-esc="len(session.payment_ids.filtered(lambda p: p.payment_type == 'inbound'))"/> movimientos</small>
+                                </div>
+                                <div class="col-3">
+                                    <h6 style="margin-bottom: 3px;"><strong>Total Pagos</strong></h6>
+                                    <h5 style="color: #dc3545; margin-bottom: 2px;">
+                                        <span t-esc="sum(session.payment_ids.filtered(lambda p: p.payment_type == 'outbound').mapped('amount'))" 
+                                              t-options="{'widget': 'monetary', 'display_currency': session.company_id.currency_id}"/>
+                                    </h5>
+                                    <small style="font-size: 8px;"><span t-esc="len(session.payment_ids.filtered(lambda p: p.payment_type == 'outbound'))"/> movimientos</small>
+                                </div>
+                                <div class="col-3">
+                                    <h6 style="margin-bottom: 3px;"><strong>Movimientos Totales</strong></h6>
+                                    <h5 style="color: #007bff; margin-bottom: 2px;">
+                                        <span t-esc="len(session.payment_ids)"/>
+                                    </h5>
+                                    <small style="font-size: 8px;">Todos los estados</small>
+                                </div>
+                                <div class="col-3">
+                                    <h6 style="margin-bottom: 3px;"><strong>Diferencia Total</strong></h6>
+                                    <h5 style="margin-bottom: 2px;" t-attf-style="color: #{sum(session.line_ids.mapped('balance_difference')) != 0 and '#ffc107' or '#28a745'};">
+                                        <span t-esc="sum(session.line_ids.mapped('balance_difference'))" 
+                                              t-options="{'widget': 'monetary', 'display_currency': session.company_id.currency_id}"/>
+                                    </h5>
+                                    <small style="font-size: 8px;">Control de caja</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Nueva página para sección de cheques -->
+                        <div class="page-break"></div>
+                        
+                        <!-- Detalle de Cheques - Optimizado para impresión -->
+                        <t t-set="all_checks" t-value="request.env['l10n_latam.check'].search([('payment_id', 'in', session.payment_ids.ids)])"/>
+                        <t t-set="checks_received" t-value="all_checks.filtered(lambda c: c.payment_id.payment_type == 'inbound')"/>
+                        <t t-set="checks_issued" t-value="all_checks.filtered(lambda c: c.payment_id.payment_type == 'outbound')"/>
+                        
+                        <t t-if="checks_received or checks_issued">
+                            <div class="compact-section">
+                                <h4 style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 15px;">
+                                    <strong>DETALLE DE CHEQUES</strong>
+                                </h4>
+                                
+                                <!-- Cheques Recibidos -->
+                                <t t-if="checks_received">
+                                    <div class="avoid-break" style="margin-bottom: 15px;">
+                                        <h5 style="background-color: #d4edda; padding: 5px; margin-bottom: 5px;">
+                                            <strong>↓ Cheques Recibidos (<span t-esc="len(checks_received)"/>)</strong>
+                                        </h5>
+                                        <table class="table table-sm table-bordered detail-table">
+                                            <thead style="background-color: #c3e6cb;">
+                                                <tr>
+                                                    <th>Fecha</th>
+                                                    <th>Cliente</th>
+                                                    <th>N° Cheque</th>
+                                                    <th>Banco</th>
+                                                    <th>CUIT</th>
+                                                    <th class="text-right" style="padding: 2px;">Importe</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="checks_received" t-as="check">
+                                                    <tr>
+                                                        <td style="padding: 2px;"><span t-field="check.payment_id.date"/></td>
+                                                        <td style="padding: 2px;"><span t-field="check.payment_id.partner_id.name"/></td>
+                                                        <td style="padding: 2px;"><span t-field="check.name"/></td>
+                                                        <td style="padding: 2px;">
+                                                            <span t-if="check.bank_id" t-field="check.bank_id.name"/>
+                                                            <span t-else="">N/A</span>
+                                                        </td>
+                                                        <td style="padding: 2px;">
+                                                            <span t-if="check.payment_id.partner_id.vat" t-field="check.payment_id.partner_id.vat"/>
+                                                            <span t-else="">Sin CUIT</span>
+                                                        </td>
+                                                        <td class="text-right" style="padding: 2px;">
+                                                            <span t-field="check.amount" t-options="{'widget': 'monetary', 'display_currency': check.payment_id.currency_id}"/>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                            <tfoot style="background-color: #f8f9fa;">
+                                                <tr>
+                                                    <td colspan="5" class="text-right" style="padding: 2px; font-weight: bold;">Total Cheques Recibidos:</td>
+                                                    <td class="text-right" style="padding: 2px; font-weight: bold;">
+                                                        <span t-esc="sum(checks_received.mapped('amount'))" 
+                                                              t-options="{'widget': 'monetary', 'display_currency': session.company_id.currency_id}"/>
+                                                    </td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </t>
+
+                                <!-- Cheques Emitidos -->
+                                <t t-if="checks_issued">
+                                    <div class="avoid-break" style="margin-bottom: 15px;">
+                                        <h5 style="background-color: #f8d7da; padding: 5px; margin-bottom: 5px;">
+                                            <strong>↑ Cheques Emitidos (<span t-esc="len(checks_issued)"/>)</strong>
+                                        </h5>
+                                        <table class="table table-sm table-bordered detail-table">
+                                            <thead style="background-color: #f5c6cb;">
+                                                <tr>
+                                                    <th>Fecha</th>
+                                                    <th>Beneficiario</th>
+                                                    <th>N° Cheque</th>
+                                                    <th>Banco</th>
+                                                    <th>CUIT Emisor</th>
+                                                    <th class="text-right" style="padding: 2px;">Importe</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="checks_issued" t-as="check">
+                                                    <tr>
+                                                        <td style="padding: 2px;"><span t-field="check.payment_id.date"/></td>
+                                                        <td style="padding: 2px;"><span t-field="check.payment_id.partner_id.name"/></td>
+                                                        <td style="padding: 2px;"><span t-field="check.name"/></td>
+                                                        <td style="padding: 2px;">
+                                                            <span t-if="check.bank_id" t-field="check.bank_id.name"/>
+                                                            <span t-else="">N/A</span>
+                                                        </td>
+                                                        <td style="padding: 2px;">
+                                                            <span t-if="check.payment_id.company_id.vat" t-field="check.payment_id.company_id.vat"/>
+                                                            <span t-else="">Sin CUIT</span>
+                                                        </td>
+                                                        <td class="text-right" style="padding: 2px;">
+                                                            <span t-field="check.amount" t-options="{'widget': 'monetary', 'display_currency': check.payment_id.currency_id}"/>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                            <tfoot style="background-color: #f8f9fa;">
+                                                <tr>
+                                                    <td colspan="5" class="text-right" style="padding: 2px; font-weight: bold;">Total Cheques Emitidos:</td>
+                                                    <td class="text-right" style="padding: 2px; font-weight: bold;">
+                                                        <span t-esc="sum(checks_issued.mapped('amount'))" 
+                                                              t-options="{'widget': 'monetary', 'display_currency': session.company_id.currency_id}"/>
+                                                    </td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </t>
+
+                                <!-- Resumen de Cheques compacto -->
+                                <div style="border: 1px solid #000; padding: 8px; background-color: #f8f9fa;">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <h6 style="margin-bottom: 2px;"><strong>Cheques Recibidos</strong></h6>
+                                            <h6 style="color: #28a745; margin-bottom: 1px;"><span t-esc="len(checks_received)"/> cheques</h6>
+                                            <small style="font-size: 8px;">
+                                                <span t-esc="sum(checks_received.mapped('amount'))" 
+                                                      t-options="{'widget': 'monetary', 'display_currency': session.company_id.currency_id}"/>
+                                            </small>
+                                        </div>
+                                        <div class="col-4">
+                                            <h6 style="margin-bottom: 2px;"><strong>Cheques Emitidos</strong></h6>
+                                            <h6 style="color: #dc3545; margin-bottom: 1px;"><span t-esc="len(checks_issued)"/> cheques</h6>
+                                            <small style="font-size: 8px;">
+                                                <span t-esc="sum(checks_issued.mapped('amount'))" 
+                                                      t-options="{'widget': 'monetary', 'display_currency': session.company_id.currency_id}"/>
+                                            </small>
+                                        </div>
+                                        <div class="col-4">
+                                            <h6 style="margin-bottom: 2px;"><strong>Total Cheques</strong></h6>
+                                            <h6 style="color: #007bff; margin-bottom: 1px;"><span t-esc="len(checks_received) + len(checks_issued)"/> cheques</h6>
+                                            <small style="font-size: 8px;">Recibidos + Emitidos</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- Cheques en Cartera - Optimizado -->
+                        <t t-set="checks_cartera" t-value="all_checks.filtered(lambda c: c.current_journal_id and 'terceros' in (c.current_journal_id.name or '').lower())"/>
+                        
+                        <t t-if="checks_cartera">
+                            <div class="compact-section avoid-break" style="margin-top: 15px;">
+                                <h4 style="background-color: #fff3cd; padding: 8px; border-left: 4px solid #ffc107; margin-bottom: 10px;">
+                                    <strong>CHEQUES EN CARTERA (<span t-esc="len(checks_cartera)"/> cheques)</strong>
+                                </h4>
+                                <table class="table table-sm table-bordered detail-table">
+                                    <thead style="background-color: #ffeaa7;">
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Cliente</th>
+                                            <th>N° Cheque</th>
+                                            <th>Banco</th>
+                                            <th>CUIT</th>
+                                            <th>Journal Actual</th>
+                                            <th class="text-right">Importe</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="checks_cartera" t-as="check">
+                                            <tr>
+                                                <td style="padding: 2px;"><span t-field="check.payment_id.date"/></td>
+                                                <td style="padding: 2px;"><span t-field="check.payment_id.partner_id.name"/></td>
+                                                <td style="padding: 2px;"><span t-field="check.name"/></td>
+                                                <td style="padding: 2px;">
+                                                    <span t-if="check.bank_id" t-field="check.bank_id.name"/>
+                                                    <span t-else="">N/A</span>
+                                                </td>
+                                                <td style="padding: 2px;">
+                                                    <span t-if="check.payment_id.partner_id.vat" t-field="check.payment_id.partner_id.vat"/>
+                                                    <span t-else="">Sin CUIT</span>
+                                                </td>
+                                                <td style="padding: 2px;"><span t-field="check.current_journal_id.name"/></td>
+                                                <td class="text-right" style="padding: 2px;">
+                                                    <span t-field="check.amount" t-options="{'widget': 'monetary', 'display_currency': check.payment_id.currency_id}"/>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                    <tfoot style="background-color: #f8f9fa;">
+                                        <tr>
+                                            <td colspan="6" class="text-right" style="padding: 2px; font-weight: bold;">Total Cheques en Cartera:</td>
+                                            <td class="text-right" style="padding: 2px; font-weight: bold;">
+                                                <span t-esc="sum(checks_cartera.mapped('amount'))" 
+                                                      t-options="{'widget': 'monetary', 'display_currency': session.company_id.currency_id}"/>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                                
+                                <!-- Resumen Cartera compacto -->
+                                <div style="border: 1px solid #ffc107; padding: 8px; background-color: #fff3cd; margin-top: 8px;">
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <h6 style="margin-bottom: 2px;"><strong>Cantidad en Cartera</strong></h6>
+                                            <h6 style="color: #856404; margin-bottom: 1px;"><span t-esc="len(checks_cartera)"/> cheques</h6>
+                                            <small style="font-size: 8px;">Pendientes de depósito</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <h6 style="margin-bottom: 2px;"><strong>Monto Total en Cartera</strong></h6>
+                                            <h6 style="color: #856404; margin-bottom: 1px;">
+                                                <span t-esc="sum(checks_cartera.mapped('amount'))" 
+                                                      t-options="{'widget': 'monetary', 'display_currency': session.company_id.currency_id}"/>
+                                            </h6>
+                                            <small style="font-size: 8px;">Por depositar</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- Page break if multiple sessions -->
+                        <t t-if="not session_last">
+                            <div style="page-break-after: always;"/>
+                        </t>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
